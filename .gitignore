@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Go binaries and local browser verification
+/bin/
+/dist/
+/artifacts/
+*.test

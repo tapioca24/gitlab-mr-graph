@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="mr-graph-session" content="SESSION_TOKEN" />
+    <title>MR Graph</title>
+    <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <img src="/mark.svg" alt="" width="34" height="34" /><span
+          >MR<span class="brand-slash"> / </span>GRAPH<small
+            >CHANGE BY CHANGE</small
+          ></span
+        >
+      </div>
+      <div class="project-heading">
+        <span class="eyebrow">PROJECT</span
+        ><a id="project-link" target="_blank" rel="noopener noreferrer"
+          >接続中…</a
+        >
+      </div>
+      <div class="header-actions">
+        <label class="auto"
+          ><input id="auto" type="checkbox" checked />自動更新
+          <span>60s</span></label
+        ><button id="refresh" class="primary">↻ 更新</button
+        ><button
+          id="sidebar-toggle"
+          class="mobile-toggle"
+          aria-label="MR 一覧を開閉"
+        >
+          MR
+        </button>
+      </div>
+    </header>
+    <div
+      id="demo-banner"
+      class="demo-banner"
+      role="region"
+      aria-label="デモ表示"
+      hidden
+    >
+      DEMO <span>サンプルデータです。実際の GitLab には接続していません。</span>
+    </div>
+    <div id="error-banner" class="error-banner" role="alert" hidden></div>
+    <main class="workspace">
+      <section class="graph-area" aria-label="ブランチ関係のグラフ">
+        <div class="canvas-heading">
+          <div>
+            <span class="eyebrow">BRANCH RELATIONSHIPS</span>
+            <h1>変更のつながり<span id="count" class="count">0</span></h1>
+          </div>
+          <div class="canvas-actions">
+            <button id="clear" hidden>選択を解除</button
+            ><button id="fit">⊡ 全体</button>
+          </div>
+        </div>
+        <div
+          id="canvas"
+          class="canvas"
+          tabindex="0"
+          role="region"
+          aria-label="MR グラフ。ドラッグで移動、ホイールで拡大縮小、矢印キーで移動できます。"
+        >
+          <div id="world" class="world">
+            <svg id="edges" aria-hidden="true"></svg>
+            <div id="nodes"></div>
+          </div>
+          <div id="empty" class="empty">
+            <span class="empty-symbol">↗</span>
+            <h2>変更を読み込んでいます</h2>
+            <p>MR とブランチの関係を確認しています。</p>
+          </div>
+          <div class="zoom-tools">
+            <button id="zoom-out" aria-label="縮小">−</button
+            ><output id="zoom-label" aria-label="拡大率">100%</output
+            ><button id="zoom-in" aria-label="拡大">＋</button>
+          </div>
+          <div class="canvas-hint">ドラッグで移動 · ホイールで拡大縮小</div>
+        </div>
+        <div class="legend">
+          <span><i class="legend-line"></i>ブランチの積み重ね</span
+          ><span><i class="dot green"></i>CI 成功</span
+          ><span><i class="dot amber"></i>CI 進行中</span
+          ><span><i class="dot red"></i>要確認</span
+          ><span id="relationship-hint" class="relationship-hint"
+            >MR を選択して上流・下流を辿る</span
+          >
+        </div>
+      </section>
+      <aside id="inspector" class="inspector" aria-label="MR 一覧と詳細">
+        <div id="inspector-content"></div>
+      </aside>
+    </main>
+    <footer class="footer">
+      <span id="connection"><i class="dot"></i>接続中</span
+      ><span id="updated">まだ更新されていません</span
+      ><span id="update-status"></span><span id="version"></span>
+    </footer>
+  </body>
+</html>

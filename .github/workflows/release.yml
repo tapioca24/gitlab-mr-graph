@@ -1,0 +1,29 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.26.x"
+          cache: false
+      - run: make test check
+      - name: OS・CPU 別の実行ファイルをビルド
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: bash scripts/build-release.sh "$RELEASE_VERSION"
+      - name: Linux の配布ファイルを確認
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: test "$(./dist/gitlab-mr-graph_${RELEASE_VERSION}_linux_amd64 --version)" = "gitlab-mr-graph $RELEASE_VERSION"
+      - name: GitHub Release を公開
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_VERSION" dist/gitlab-mr-graph_${RELEASE_VERSION}_* dist/checksums.txt --verify-tag --title "$RELEASE_VERSION" --generate-notes

@@ -1,0 +1,174 @@
+package gitlab
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/tapioca24/gitlab-mr-graph/internal/model"
+)
+
+func encode(v any) []byte { b, _ := json.Marshal(v); return b }
+func fixture(id int) rawMR {
+	return rawMR{ID: id, IID: id, SourceProjectID: 1, TargetProjectID: 1, SourceBranch: fmt.Sprintf("feature-%d", id), TargetBranch: "main"}
+}
+
+func TestCompletePaginationAndStatusHydration(t *testing.T) {
+	var mu sync.Mutex
+	pages := []string{}
+	c := Client{Hostname: "gitlab.example.test", Run: func(ctx context.Context, args []string) ([]byte, error) {
+		if len(args) != 6 || args[0] != "api" || args[2] != "--method" || args[3] != "GET" || args[5] != "gitlab.example.test" {
+			t.Errorf("unexpected args: %v", args)
+		}
+		endpoint := args[1]
+		if strings.Contains(endpoint, "?state=opened&scope=all") {
+			mu.Lock()
+			pages = append(pages, endpoint)
+			mu.Unlock()
+			if strings.HasSuffix(endpoint, "page=1") {
+				list := make([]rawMR, 100)
+				for i := range list {
+					list[i] = fixture(i + 1)
+				}
+				return encode(list), nil
+			}
+			if strings.HasSuffix(endpoint, "page=2") {
+				return encode([]rawMR{fixture(101)}), nil
+			}
+			t.Fatal("unexpected page")
+		}
+		if strings.HasSuffix(endpoint, "/approvals") {
+			return []byte(`{"approvals_required":2,"approvals_left":1,"approved_by":[{"user":{"id":9}}]}`), nil
+		}
+		if strings.HasSuffix(endpoint, "/approval_state") {
+			return []byte(`{"rules":[{"approved":false}]}`), nil
+		}
+		var id int
+		fmt.Sscanf(endpoint, "projects/1/merge_requests/%d", &id)
+		return []byte(fmt.Sprintf(`{"id":%d,"iid":%d,"head_pipeline":{"status":"running"},"has_conflicts":false,"detailed_merge_status":"checking"}`, id, id)), nil
+	}}
+	var first, last []model.MR
+	if err := c.Load(context.Background(), model.Project{ID: 1}, func(mrs []model.MR, warnings []string) {
+		if first == nil {
+			first = mrs
+		}
+		last = mrs
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(pages) != 2 || len(first) != 101 || len(last) != 101 {
+		t.Fatalf("pages=%d first=%d last=%d", len(pages), len(first), len(last))
+	}
+	if first[0].CI != "loading" {
+		t.Fatal("complete list was not published before hydration")
+	}
+	if last[100].CI != "running" || last[100].Conflict != "unknown" || last[100].Approval.State != "waiting" {
+		t.Fatalf("bad hydrated state: %+v", last[100])
+	}
+}
+
+func TestPaginationFailureNeverPublishesIncompleteList(t *testing.T) {
+	c := Client{Run: func(ctx context.Context, args []string) ([]byte, error) {
+		if strings.HasSuffix(args[1], "page=1") {
+			list := make([]rawMR, 100)
+			for i := range list {
+				list[i] = fixture(i + 1)
+			}
+			return encode(list), nil
+		}
+		return nil, errors.New("page unavailable")
+	}}
+	published := false
+	err := c.Load(context.Background(), model.Project{ID: 1}, func([]model.MR, []string) { published = true })
+	if err == nil || published {
+		t.Fatal("途中のページの失敗で部分的な一覧を公開しました")
+	}
+}
+
+func TestOptionalFailureAndAbsentPipelineStayUnknown(t *testing.T) {
+	c := Client{Run: func(ctx context.Context, args []string) ([]byte, error) {
+		if strings.Contains(args[1], "?") {
+			return encode([]rawMR{fixture(1), fixture(2)}), nil
+		}
+		if strings.HasSuffix(args[1], "/approvals") {
+			return nil, errors.New("unsupported")
+		}
+		if strings.HasSuffix(args[1], "/1") {
+			return nil, errors.New("timeout")
+		}
+		return []byte(`{"id":2,"iid":2,"has_conflicts":false,"detailed_merge_status":"unchecked"}`), nil
+	}}
+	var result []model.MR
+	err := c.Load(context.Background(), model.Project{ID: 1}, func(mrs []model.MR, _ []string) { result = mrs })
+	if err != nil || len(result) != 2 {
+		t.Fatalf("%v %v", err, result)
+	}
+	for _, m := range result {
+		if m.CI != "unknown" || m.Conflict != "unknown" || m.Approval.State != "unknown" {
+			t.Errorf("missing data converted to positive state: %+v", m)
+		}
+	}
+}
+
+func TestApprovalCountsDoNotInventRequirements(t *testing.T) {
+	zero, two, one := 0, 2, 1
+	for _, test := range []struct {
+		raw  rawApproval
+		want string
+	}{
+		{rawApproval{ApprovedBy: []json.RawMessage{json.RawMessage(`{}`)}}, "received"},
+		{rawApproval{Required: &zero, Left: &zero}, "unknown"},
+		{rawApproval{Required: &two, Left: &zero}, "unknown"},
+		{rawApproval{Required: &two, Left: &one}, "unknown"},
+	} {
+		if got := approval(test.raw); got.State != test.want {
+			t.Errorf("got %s want %s", got.State, test.want)
+		}
+	}
+	if ci(rawMR{Pipeline: json.RawMessage(`null`)}) != "none" {
+		t.Fatal("null pipeline is unexecuted")
+	}
+	if ci(rawMR{}) != "unknown" {
+		t.Fatal("missing pipeline is unknown")
+	}
+	for _, test := range []struct {
+		rules string
+		want  string
+	}{
+		{`[{"approved":true},{"approved":true}]`, "met"},
+		{`[{"approved":true},{"approved":false}]`, "waiting"},
+		{`[{"approved":true},{}]`, "unknown"},
+		{`[]`, "not_required"},
+		{`null`, "unknown"},
+	} {
+		if got := applyRules(model.Approval{State: "unknown"}, json.RawMessage(test.rules)); got.State != test.want {
+			t.Errorf("rules %s: got %s want %s", test.rules, got.State, test.want)
+		}
+	}
+}
+
+func TestResolveUsesGlabContextAndEscapesExplicitPath(t *testing.T) {
+	for _, path := range []string{"", "group/subgroup/project"} {
+		c := Client{Repo: path, Run: func(ctx context.Context, args []string) ([]byte, error) {
+			want := "projects/:fullpath"
+			if path != "" {
+				want = "projects/group%2Fsubgroup%2Fproject"
+			}
+			if args[1] != want {
+				t.Errorf("%s != %s", args[1], want)
+			}
+			return []byte(`{"id":1,"name":"Project","path_with_namespace":"group/project","web_url":"https://gitlab.example.test/group/project","default_branch":"main"}`), nil
+		}}
+		p, err := c.Resolve(context.Background())
+		if err != nil || p.ID != 1 || p.DefaultBranch != "main" {
+			t.Fatalf("%+v %v", p, err)
+		}
+		if c.Hostname != "gitlab.example.test" {
+			t.Fatal("resolved host was not pinned")
+		}
+	}
+}
