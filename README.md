@@ -1,5 +1,12 @@
 # gitlab-mr-graph
 
+<a aria-label="CI" href="https://github.com/tapioca24/gitlab-mr-graph/actions/workflows/ci.yml">
+  <img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/tapioca24/gitlab-mr-graph/ci.yml?branch=main&style=for-the-badge&labelColor=223843">
+</a>
+<a aria-label="license" href="https://github.com/tapioca24/gitlab-mr-graph/blob/main/LICENSE">
+  <img alt="MIT license" src="https://img.shields.io/github/license/tapioca24/gitlab-mr-graph?style=for-the-badge&labelColor=223843">
+</a>
+
 A CLI that visualizes branch dependencies between GitLab merge requests. It uses GitLab CLI (`glab`) authentication and displays the graph in your local browser.
 
 It shows all open MRs in the target repository and highlights the upstream and downstream dependencies of the selected MR.
