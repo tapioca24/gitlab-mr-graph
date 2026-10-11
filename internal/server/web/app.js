@@ -579,7 +579,7 @@ async function poll() {
     $("#connection").innerHTML =
       `<i class="dot ${snapshot.error ? "red" : snapshot.loading ? "amber" : "green"}"></i>`;
     $("#connection").title =
-      `${status} · ${updated}\n${snapshot.version}${snapshot.update ? ` · ${snapshot.update}` : ""}`;
+      `${status} · ${updated}\n${snapshot.version}`;
     $("#connection").setAttribute("aria-label", `${status} · ${updated}`);
     $("#refresh").title =
       `${snapshot.loading ? "更新中" : "更新"} (R) · ${updated}`;

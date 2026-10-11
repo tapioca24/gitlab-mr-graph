@@ -6,18 +6,20 @@ GitLab の Merge Request を、ブランチの依存からグラフ化する CLI
 
 ## インストール
 
-macOS / Linux の arm64 / amd64 に対応しています。利用時に Go や Node.js は不要です。
+macOS / Linux の arm64 / amd64 に対応しています。
+GitLab に接続する場合は、別途 GitLab CLI (`glab`) が必要です。
+
+ビルドには Go 1.24 以上が必要です。
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tapioca24/gitlab-mr-graph/main/scripts/install.sh | sh
-export PATH="$HOME/.local/bin:$PATH"
+go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest
 ```
 
-GitHub Releases の配布ファイルを取得し、SHA-256 を確認して `~/.local/bin/gitlab-mr-graph` に配置します。配置先やバージョンを指定する場合:
+実行ファイルは `GOBIN`、未設定の場合は `$(go env GOPATH)/bin` に配置されます。既定の配置先を使う場合:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/tapioca24/gitlab-mr-graph/main/scripts/install.sh | \
-  GITLAB_MR_GRAPH_INSTALL_DIR="$HOME/bin" GITLAB_MR_GRAPH_VERSION=v0.1.0 sh
+export PATH="$(go env GOPATH)/bin:$PATH"
+gitlab-mr-graph --version
 ```
 
 ## すぐに試す
@@ -57,17 +59,6 @@ gitlab-mr-graph --repo https://gitlab.example.com/group/project
 ```
 
 MR 情報は60秒間隔で更新します。タブが非表示の間は自動取得を止めます。
-
-## ツールの更新
-
-起動時に最新版をバックグラウンドで取得し、次回起動から使用します。デモと開発ビルドは自動更新しません。
-
-```sh
-# 自動更新を無効にして起動
-gitlab-mr-graph --no-update
-# 明示的に更新
-gitlab-mr-graph update
-```
 
 ## 開発
 

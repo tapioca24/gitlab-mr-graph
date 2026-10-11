@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"github.com/tapioca24/gitlab-mr-graph/internal/gitlab"
 	"github.com/tapioca24/gitlab-mr-graph/internal/model"
 	"github.com/tapioca24/gitlab-mr-graph/internal/server"
-	"github.com/tapioca24/gitlab-mr-graph/internal/update"
 )
 
 var version = "dev"
@@ -33,17 +33,12 @@ func main() {
 }
 
 func run() error {
+	info, _ := debug.ReadBuildInfo()
+	currentVersion := versionFromBuildInfo(version, info)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	if len(os.Args) > 1 && os.Args[1] == "update" {
-		if len(os.Args) > 2 {
-			return errors.New("使い方: gitlab-mr-graph update")
-		}
-		return installUpdate(ctx)
-	}
 	port := flag.Int("port", 8787, "ローカルサーバーのポート (0: 空きポート)")
 	noOpen := flag.Bool("no-open", false, "ブラウザを開かず URL を表示")
-	noUpdate := flag.Bool("no-update", false, "ツールの自動更新を無効化")
 	host := flag.String("hostname", "", "GitLab ホストを明示指定")
 	repo := flag.String("repo", "", "プロジェクトのパスまたは URL (既定: 現在のリポジトリ)")
 	useDemo := flag.Bool("demo", false, "認証不要のデモデータを表示")
@@ -51,7 +46,7 @@ func run() error {
 	showVersion := flag.Bool("version", false, "バージョンを表示")
 	flag.Parse()
 	if *showVersion {
-		fmt.Println("gitlab-mr-graph", version)
+		fmt.Println("gitlab-mr-graph", currentVersion)
 		return nil
 	}
 	if flag.NArg() != 0 {
@@ -120,7 +115,7 @@ func run() error {
 		}
 	}
 	defer listener.Close()
-	s := server.NewService(ctx, p, loader, version, *useDemo)
+	s := server.NewService(ctx, p, loader, currentVersion, *useDemo)
 	handler, err := server.NewHandler(s, listener.Addr().String())
 	if err != nil {
 		return err
@@ -129,23 +124,6 @@ func run() error {
 	failures := make(chan error, 1)
 	go func() { failures <- httpServer.Serve(listener) }()
 	s.Refresh()
-	if !*noUpdate && !*useDemo && version != "dev" {
-		go func() {
-			updateCtx, updateCancel := context.WithTimeout(ctx, 90*time.Second)
-			defer updateCancel()
-			path, err := os.Executable()
-			if err != nil {
-				s.SetUpdate("更新先を確認できませんでした")
-				return
-			}
-			result, err := (update.Client{}).CheckAndInstall(updateCtx, version, path)
-			if err != nil {
-				s.SetUpdate("自動更新できませんでした: " + err.Error())
-				return
-			}
-			s.SetUpdate(result.Message)
-		}()
-	}
 	address := "http://" + listener.Addr().String()
 	fmt.Printf("%s\n%s\nCtrl-C で終了します。\n", p.Path, address)
 	if *useDemo {
@@ -179,17 +157,13 @@ func openBrowser(ctx context.Context, address string) error {
 	return exec.CommandContext(openCtx, command, address).Run()
 }
 
-func installUpdate(ctx context.Context) error {
-	path, err := os.Executable()
-	if err != nil {
-		return err
+// Release builds supply a version through ldflags; go install embeds the module version.
+func versionFromBuildInfo(releaseVersion string, info *debug.BuildInfo) string {
+	if releaseVersion != "dev" {
+		return releaseVersion
 	}
-	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
-	defer cancel()
-	result, err := (update.Client{}).CheckAndInstall(ctx, version, path)
-	if err != nil {
-		return err
+	if info != nil && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
 	}
-	fmt.Println(result.Message)
-	return nil
+	return "dev"
 }

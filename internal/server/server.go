@@ -30,7 +30,6 @@ type Snapshot struct {
 	Error     string      `json:"error"`
 	Version   string      `json:"version"`
 	Demo      bool        `json:"demo"`
-	Update    string      `json:"update"`
 }
 
 type Service struct {
@@ -44,11 +43,6 @@ func NewService(ctx context.Context, p model.Project, loader Loader, version str
 	return &Service{ctx: ctx, loader: loader, snapshot: Snapshot{Graph: graph.Build(p, nil), Version: version, Demo: demo}}
 }
 func (s *Service) Snapshot() Snapshot { s.mu.RLock(); defer s.mu.RUnlock(); return s.snapshot }
-func (s *Service) SetUpdate(message string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.snapshot.Update = message
-}
 func (s *Service) Refresh() bool {
 	s.mu.Lock()
 	if s.snapshot.Loading || s.ctx.Err() != nil {

@@ -24,7 +24,7 @@ make test
 make check
 ```
 
-`make test` は race detector を有効にして Go テストを実行します。テストは固定した API 応答とローカル HTTPS サーバーを使い、実 GitLab への接続は不要です。
+`make test` は race detector を有効にして Go テストを実行します。テストは固定した API 応答とローカル HTTP サーバーを使い、実 GitLab への接続は不要です。
 
 JavaScript は Node.js 標準のテストランナーで絞り込みとグラフ配置を検証します。追加パッケージのインストールは不要です。
 
@@ -36,7 +36,7 @@ JavaScript は Node.js 標準のテストランナーで絞り込みとグラフ
 bash scripts/build-release.sh v0.1.0
 ```
 
-`dist/` に macOS / Linux × arm64 / amd64 の実行ファイルと `checksums.txt` を生成します。バージョンは `vMAJOR.MINOR.PATCH` 形式で指定してください。
+`dist/` に macOS / Linux × arm64 / amd64 の実行ファイルと `checksums.txt` を生成します。バージョンは `vMAJOR.MINOR.PATCH` 形式で指定してください。配布ビルドにはこのバージョンを埋め込みます。`go install ...@バージョン` の場合は、Go のビルド情報からモジュールのバージョンを表示します。
 
 ## リリース
 
@@ -48,3 +48,5 @@ git push origin v0.1.0
 ```
 
 Release workflow がテストと静的チェック、配布ファイルのビルドを実行し、実行ファイルとチェックサムを GitHub Release に公開します。
+
+同じタグは `go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest` の配布にも使われます。インストールスクリプトやツール本体の自動更新機能は提供しません。
