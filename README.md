@@ -1,25 +1,13 @@
 # gitlab-mr-graph
 
-GitLab の Merge Request を、ブランチの依存からグラフ化する CLI。GitLab CLI (`glab`) の認証を利用し、ローカルのブラウザで表示します。
+GitLab の Merge Request のブランチ依存を可視化する CLI。GitLab CLI (`glab`) の認証を利用し、ローカルのブラウザで表示します。
 
 対象のリポジトリの開いている MR 全件を表示し、選択した MR の上流・下流を可視化します。
 
 ## インストール
 
-macOS / Linux の arm64 / amd64 に対応しています。
-GitLab に接続する場合は、別途 GitLab CLI (`glab`) が必要です。
-
-ビルドには Go 1.24 以上が必要です。
-
 ```sh
 go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest
-```
-
-実行ファイルは `GOBIN`、未設定の場合は `$(go env GOPATH)/bin` に配置されます。既定の配置先を使う場合:
-
-```sh
-export PATH="$(go env GOPATH)/bin:$PATH"
-gitlab-mr-graph --version
 ```
 
 ## すぐに試す
@@ -36,9 +24,9 @@ gitlab-mr-graph --demo
 gitlab-mr-graph --demo --demo-count 100
 ```
 
-## GitLab で使う
+## GitLab リポジトリで使う
 
-事前に [GitLab CLI](https://docs.gitlab.com/cli/) をインストールし、対象ホストへのログインを済ませてください。
+事前に [GitLab CLI](https://docs.gitlab.com/cli/) をインストールし、認証を済ませてください。
 
 GitLab のリポジトリ内で実行します。
 
@@ -59,16 +47,6 @@ gitlab-mr-graph --repo https://gitlab.example.com/group/project
 ```
 
 MR 情報は60秒間隔で更新します。タブが非表示の間は自動取得を止めます。
-
-## 開発
-
-ビルド・テスト・リリースの手順は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
-
-## 謝辞
-
-- [gh-pr-graph](https://github.com/orangain/gh-pr-graph)
-- [Catppuccin](https://github.com/catppuccin/catppuccin)
-- [Lucide](https://lucide.dev/): SVG 0.468.0 とライセンスをローカルに同梱
 
 ## キーボードショートカット
 
@@ -91,3 +69,13 @@ MR 情報は60秒間隔で更新します。タブが非表示の間は自動取
 | `↑` / `↓` / `←` / `→` | グラフを移動                                                           | MR 未選択でグラフにフォーカス中                                           |
 | `Esc`                 | 詳細・ヘルプを閉じる・文字入力からグラフに戻る                         |                                                                           |
 | `?`                   | 全ショートカットの一覧を表示（ヘッダーのキーボードボタンでも表示可能） |                                                                           |
+
+## 開発
+
+ビルド・テスト・リリースの手順は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+
+## 謝辞
+
+- [gh-pr-graph](https://github.com/orangain/gh-pr-graph)
+- [Catppuccin](https://github.com/catppuccin/catppuccin)
+- [Lucide](https://lucide.dev/): SVG 0.468.0 とライセンスをローカルに同梱
