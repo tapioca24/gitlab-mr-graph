@@ -12,21 +12,7 @@ It shows all open MRs in the target repository and highlights the upstream and d
 go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest
 ```
 
-## Quick start
-
-Try it with sample data, without authentication.
-
-```sh
-gitlab-mr-graph --demo
-```
-
-To display 100 MRs:
-
-```sh
-gitlab-mr-graph --demo --demo-count 100
-```
-
-## Using it with a GitLab repository
+## Usage
 
 Install and authenticate the [GitLab CLI](https://docs.gitlab.com/cli/) first.
 
@@ -49,6 +35,20 @@ gitlab-mr-graph --repo https://gitlab.example.com/group/project
 ```
 
 MR data refreshes every 60 seconds. Automatic fetching pauses while the tab is hidden.
+
+### Demo
+
+Try it with sample data, without authentication.
+
+```sh
+gitlab-mr-graph --demo
+```
+
+To display 100 MRs:
+
+```sh
+gitlab-mr-graph --demo --demo-count 100
+```
 
 ## Keyboard shortcuts
 
