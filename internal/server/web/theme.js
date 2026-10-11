@@ -10,4 +10,13 @@
     : matchMedia("(prefers-color-scheme: dark)").matches
       ? "mocha"
       : "latte";
+  const syncFavicon = () => {
+    document.querySelector('link[rel="icon"]').href =
+      `/mark.svg?theme=${document.documentElement.dataset.theme}`;
+  };
+  syncFavicon();
+  new MutationObserver(syncFavicon).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
 })();

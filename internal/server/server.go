@@ -90,6 +90,20 @@ func NewHandler(s *Service, host string) (http.Handler, error) {
 	web, _ := fs.Sub(assets, "web")
 	fileServer := http.FileServer(http.FS(web))
 	mux := http.NewServeMux()
+	// Use the same Lucide asset as the header, with the selected theme's accent.
+	mux.HandleFunc("GET /mark.svg", func(w http.ResponseWriter, r *http.Request) {
+		data, err := fs.ReadFile(web, "icons/git-branch.svg")
+		if err != nil {
+			http.Error(w, "アイコンを読み込めません", http.StatusInternalServerError)
+			return
+		}
+		accent := "#1e66f5"
+		if r.URL.Query().Get("theme") == "mocha" {
+			accent = "#89b4fa"
+		}
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Write([]byte(strings.ReplaceAll(string(data), "currentColor", accent)))
+	})
 	mux.HandleFunc("GET /api/graph", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(s.Snapshot())

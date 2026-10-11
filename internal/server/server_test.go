@@ -108,6 +108,14 @@ func TestHostSessionOriginAndAssets(t *testing.T) {
 			t.Fatalf("embedded UI asset %s: %d", path, got.Code)
 		}
 	}
+	branch := request("GET", "/icons/git-branch.svg", "", "", "127.0.0.1:8787")
+	for _, theme := range []struct{ name, accent string }{{"latte", "#1e66f5"}, {"mocha", "#89b4fa"}} {
+		favicon := request("GET", "/mark.svg?theme="+theme.name, "", "", "127.0.0.1:8787")
+		want := strings.ReplaceAll(branch.Body.String(), "currentColor", theme.accent)
+		if favicon.Code != 200 || favicon.Header().Get("Content-Type") != "image/svg+xml" || favicon.Body.String() != want {
+			t.Fatalf("%s favicon does not match the header icon and theme", theme.name)
+		}
+	}
 	csp := root.Header().Get("Content-Security-Policy")
 	if !strings.Contains(csp, "img-src 'self' data: https: http:") || !strings.Contains(csp, "script-src 'self';") {
 		t.Fatalf("avatar images or script restriction missing: %s", csp)
