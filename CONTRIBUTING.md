@@ -3,7 +3,7 @@
 ## 必要な環境
 
 - Go 1.24 以上
-- Node.js（JavaScript の構文チェック用）
+- Node.js（JavaScript のテスト・構文チェック用）
 - make、POSIX shell、Bash
 
 実 GitLab に接続する場合は、認証済みの GitLab CLI (`glab`) も必要です。
@@ -25,6 +25,8 @@ make check
 ```
 
 `make test` は race detector を有効にして Go テストを実行します。テストは固定した API 応答とローカル HTTPS サーバーを使い、実 GitLab への接続は不要です。
+
+JavaScript は Node.js 標準のテストランナーで絞り込みとグラフ配置を検証します。追加パッケージのインストールは不要です。
 
 `make check` は `go vet`、JavaScript と shell の構文チェックを実行します。CI は macOS / Linux と Go 1.24 / 1.26 の組み合わせでテスト・チェック・ビルドを実行します。
 
