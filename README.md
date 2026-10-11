@@ -4,6 +4,8 @@ A CLI that visualizes branch dependencies between GitLab merge requests. It uses
 
 It shows all open MRs in the target repository and highlights the upstream and downstream dependencies of the selected MR.
 
+![Demo graph showing MR dependencies and details for the selected MR](docs/images/demo.png)
+
 ## Installation
 
 ```sh
