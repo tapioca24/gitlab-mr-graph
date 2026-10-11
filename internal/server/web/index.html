@@ -7,100 +7,302 @@
     <title>MR Graph</title>
     <link rel="icon" href="/mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
+    <script src="/theme.js"></script>
+    <script src="/graph-view.js" defer></script>
     <script src="/app.js" defer></script>
   </head>
   <body>
     <header class="header">
-      <div class="brand">
-        <img src="/mark.svg" alt="" width="34" height="34" /><span
-          >MR<span class="brand-slash"> / </span>GRAPH<small
-            >CHANGE BY CHANGE</small
-          ></span
+      <div class="project-heading">
+        <span class="brand"
+          ><i
+            class="icon"
+            style="--icon: url(&quot;/icons/git-branch.svg&quot;)"
+            aria-hidden="true"
+          ></i
+          >MR Graph</span
+        >
+        <span class="project-divider">/</span>
+        <a id="project-link" target="_blank" rel="noopener noreferrer"
+          >接続中…</a
+        >
+        <span
+          id="demo-banner"
+          class="demo-badge"
+          title="サンプルデータです。実際の GitLab には接続していません。"
+          hidden
+          >DEMO</span
         >
       </div>
-      <div class="project-heading">
-        <span class="eyebrow">PROJECT</span
-        ><a id="project-link" target="_blank" rel="noopener noreferrer"
-          >接続中…</a
+      <div class="filters" role="group" aria-label="MR の絞り込み">
+        <label class="filter-check"
+          ><input id="authored" type="checkbox" aria-keyshortcuts="A" />Authored
+          by me</label
+        >
+        <label class="filter-check"
+          ><input id="assigned" type="checkbox" aria-keyshortcuts="S" />Assigned
+          to me</label
+        >
+        <label
+          class="filter-check"
+          title="Dependabot / Renovate の MR を非表示にする (B)"
+          ><input id="hide-bots" type="checkbox" aria-keyshortcuts="B" />Hide
+          bots</label
+        >
+        <div class="query-field">
+          <i
+            class="icon"
+            style="--icon: url(&quot;/icons/search.svg&quot;)"
+            aria-hidden="true"
+          ></i>
+          <input
+            id="query"
+            type="search"
+            aria-label="Query：MR 番号・タイトル・ユーザー・ブランチ・ラベルで絞り込み"
+            placeholder="Query /"
+            aria-keyshortcuts="/"
+            title="Query にフォーカス (/)"
+            autocomplete="off"
+          />
+          <span class="query-placeholder" aria-hidden="true">
+            <span>Query</span><kbd id="query-shortcut">/</kbd>
+          </span>
+        </div>
+        <output
+          id="count"
+          class="count"
+          aria-live="polite"
+          aria-label="条件に一致する MR 数"
+          >0 MR</output
         >
       </div>
       <div class="header-actions">
-        <label class="auto"
-          ><input id="auto" type="checkbox" checked />自動更新
-          <span>60s</span></label
-        ><button id="refresh" class="primary">↻ 更新</button
-        ><button
-          id="sidebar-toggle"
-          class="mobile-toggle"
-          aria-label="MR 一覧を開閉"
+        <span
+          id="connection"
+          class="connection"
+          role="status"
+          aria-label="接続状態"
+          ><i class="dot"></i
+        ></span>
+        <label class="auto" title="60秒ごとに更新 (U)"
+          ><input
+            id="auto"
+            type="checkbox"
+            aria-keyshortcuts="U"
+            checked
+          />自動更新</label
         >
-          MR
+        <button
+          id="refresh"
+          class="icon-button"
+          aria-label="更新"
+          aria-keyshortcuts="R"
+          title="更新 (R)"
+        >
+          <i
+            class="icon"
+            style="--icon: url(&quot;/icons/refresh-cw.svg&quot;)"
+            aria-hidden="true"
+          ></i>
+        </button>
+        <button
+          id="theme"
+          aria-keyshortcuts="T"
+          class="icon-button"
+          aria-label="テーマを切り替え"
+          title="テーマを切り替え"
+        >
+          <i class="icon theme-icon" aria-hidden="true"></i>
+        </button>
+        <button
+          id="help"
+          class="icon-button"
+          aria-label="キーボードショートカット"
+          aria-keyshortcuts="?"
+          title="ショートカット一覧 (?)"
+        >
+          <i
+            class="icon"
+            style="--icon: url(&quot;/icons/keyboard.svg&quot;)"
+            aria-hidden="true"
+          ></i>
         </button>
       </div>
     </header>
-    <div
-      id="demo-banner"
-      class="demo-banner"
-      role="region"
-      aria-label="デモ表示"
-      hidden
-    >
-      DEMO <span>サンプルデータです。実際の GitLab には接続していません。</span>
-    </div>
     <div id="error-banner" class="error-banner" role="alert" hidden></div>
     <main class="workspace">
       <section class="graph-area" aria-label="ブランチ関係のグラフ">
-        <div class="canvas-heading">
-          <div>
-            <span class="eyebrow">BRANCH RELATIONSHIPS</span>
-            <h1>変更のつながり<span id="count" class="count">0</span></h1>
-          </div>
-          <div class="canvas-actions">
-            <button id="clear" hidden>選択を解除</button
-            ><button id="fit">⊡ 全体</button>
-          </div>
-        </div>
         <div
           id="canvas"
           class="canvas"
           tabindex="0"
           role="region"
-          aria-label="MR グラフ。ドラッグで移動、ホイールで拡大縮小、矢印キーで移動できます。"
+          aria-label="MR グラフ。ノード上でもドラッグで移動、ホイールで拡大縮小、矢印キーで移動できます。"
         >
           <div id="world" class="world">
             <svg id="edges" aria-hidden="true"></svg>
             <div id="nodes"></div>
           </div>
           <div id="empty" class="empty">
-            <span class="empty-symbol">↗</span>
+            <i
+              class="icon"
+              style="--icon: url(&quot;/icons/git-branch.svg&quot;)"
+              aria-hidden="true"
+            ></i>
             <h2>変更を読み込んでいます</h2>
             <p>MR とブランチの関係を確認しています。</p>
           </div>
-          <div class="zoom-tools">
-            <button id="zoom-out" aria-label="縮小">−</button
-            ><output id="zoom-label" aria-label="拡大率">100%</output
-            ><button id="zoom-in" aria-label="拡大">＋</button>
+          <div class="zoom-tools" role="group" aria-label="グラフの表示倍率">
+            <button
+              id="zoom-out"
+              aria-keyshortcuts="-"
+              class="icon-button"
+              aria-label="縮小"
+              title="縮小 (-)"
+            >
+              <i
+                class="icon"
+                style="--icon: url(&quot;/icons/minus.svg&quot;)"
+                aria-hidden="true"
+              ></i>
+            </button>
+            <output id="zoom-label" aria-label="拡大率">100%</output>
+            <button
+              id="zoom-in"
+              aria-keyshortcuts="Plus ="
+              class="icon-button"
+              aria-label="拡大"
+              title="拡大 (+)"
+            >
+              <i
+                class="icon"
+                style="--icon: url(&quot;/icons/plus.svg&quot;)"
+                aria-hidden="true"
+              ></i>
+            </button>
+            <span class="tool-divider"></span>
+            <button
+              id="fit"
+              aria-keyshortcuts="F 0"
+              class="fit-button"
+              title="全体を表示 (F / 0)"
+            >
+              <i
+                class="icon"
+                style="--icon: url(&quot;/icons/maximize.svg&quot;)"
+                aria-hidden="true"
+              ></i
+              >全体
+            </button>
           </div>
-          <div class="canvas-hint">ドラッグで移動 · ホイールで拡大縮小</div>
-        </div>
-        <div class="legend">
-          <span><i class="legend-line"></i>ブランチの積み重ね</span
-          ><span><i class="dot green"></i>CI 成功</span
-          ><span><i class="dot amber"></i>CI 進行中</span
-          ><span><i class="dot red"></i>要確認</span
-          ><span id="relationship-hint" class="relationship-hint"
-            >MR を選択して上流・下流を辿る</span
-          >
         </div>
       </section>
-      <aside id="inspector" class="inspector" aria-label="MR 一覧と詳細">
+      <aside
+        id="inspector"
+        class="inspector"
+        aria-label="MR 詳細"
+        aria-hidden="true"
+        inert
+      >
         <div id="inspector-content"></div>
       </aside>
     </main>
-    <footer class="footer">
-      <span id="connection"><i class="dot"></i>接続中</span
-      ><span id="updated">まだ更新されていません</span
-      ><span id="update-status"></span><span id="version"></span>
-    </footer>
+    <dialog
+      id="shortcut-help"
+      class="shortcut-help"
+      aria-labelledby="shortcut-title"
+    >
+      <div class="shortcut-heading">
+        <h2 id="shortcut-title">キーボードショートカット</h2>
+        <button
+          id="close-help"
+          class="icon-button"
+          aria-label="ショートカット一覧を閉じる"
+        >
+          <i
+            class="icon"
+            style="--icon: url(&quot;/icons/x.svg&quot;)"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </div>
+      <p>文字入力中・IME 変換中は発動しません。</p>
+      <table>
+        <tbody>
+          <tr>
+            <th><kbd>/</kbd></th>
+            <td>Query にフォーカス</td>
+          </tr>
+          <tr>
+            <th><kbd>A</kbd></th>
+            <td>Authored by me を切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>S</kbd></th>
+            <td>Assigned to me を切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>B</kbd></th>
+            <td>Bot の非表示を切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>U</kbd></th>
+            <td>自動更新を切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>R</kbd></th>
+            <td>更新</td>
+          </tr>
+          <tr>
+            <th><kbd>T</kbd></th>
+            <td>ライト / ダークモードを切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>F</kbd> / <kbd>0</kbd></th>
+            <td>グラフ全体を表示</td>
+          </tr>
+          <tr>
+            <th><kbd>+</kbd> / <kbd>=</kbd></th>
+            <td>拡大</td>
+          </tr>
+          <tr>
+            <th><kbd>-</kbd></th>
+            <td>縮小</td>
+          </tr>
+          <tr>
+            <th><kbd>H</kbd> / <kbd>←</kbd></th>
+            <td>選択した MR の直接の上流へ</td>
+          </tr>
+          <tr>
+            <th><kbd>L</kbd> / <kbd>→</kbd></th>
+            <td>選択した MR の直接の下流へ</td>
+          </tr>
+          <tr>
+            <th><kbd>K</kbd> / <kbd>↑</kbd></th>
+            <td>同じ上流を持つ、上の MR へ</td>
+          </tr>
+          <tr>
+            <th><kbd>J</kbd> / <kbd>↓</kbd></th>
+            <td>同じ上流を持つ、下の MR へ</td>
+          </tr>
+          <tr>
+            <th><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></th>
+            <td>未選択時はグラフを移動（グラフにフォーカス中）</td>
+          </tr>
+          <tr>
+            <th><kbd>Esc</kbd></th>
+            <td>詳細・ヘルプを閉じる / 入力から戻る</td>
+          </tr>
+          <tr>
+            <th><kbd>?</kbd></th>
+            <td>このショートカット一覧を開く</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        移動先は表示中の MR から選びます。左右に複数候補がある場合は高さが近い
+        MR に移動し、端では止まります。
+      </p>
+    </dialog>
   </body>
 </html>

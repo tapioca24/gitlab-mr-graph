@@ -5,10 +5,13 @@ build:
 
 test:
 	go test -race ./...
+	node --test internal/server/graph_view.test.cjs
 
 check:
 	go vet ./...
 	node --check internal/server/web/app.js
+	node --check internal/server/web/graph-view.js
+	node --check internal/server/web/theme.js
 	sh -n scripts/install.sh
 	bash -n scripts/build-release.sh
 

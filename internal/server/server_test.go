@@ -103,4 +103,13 @@ func TestHostSessionOriginAndAssets(t *testing.T) {
 	if got := request("GET", "/app.js", "", "", "127.0.0.1:8787"); got.Code != 200 || !strings.Contains(got.Body.String(), "function renderGraph") {
 		t.Fatal("embedded assets missing")
 	}
+	for _, path := range []string{"/theme.js", "/graph-view.js", "/icons/external-link.svg", "/icons/LICENSE"} {
+		if got := request("GET", path, "", "", "127.0.0.1:8787"); got.Code != 200 {
+			t.Fatalf("embedded UI asset %s: %d", path, got.Code)
+		}
+	}
+	csp := root.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "img-src 'self' data: https: http:") || !strings.Contains(csp, "script-src 'self';") {
+		t.Fatalf("avatar images or script restriction missing: %s", csp)
+	}
 }

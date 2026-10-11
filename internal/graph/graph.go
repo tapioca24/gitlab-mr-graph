@@ -124,7 +124,7 @@ func layout(g *model.Graph) {
 	}
 	for _, e := range g.Edges {
 		if e.Cycle {
-			g.Warnings = append(g.Warnings, "循環するブランチ関係があります。破線で表示しています")
+			g.Warnings = append(g.Warnings, "循環するブランチ関係があります")
 			break
 		}
 	}
