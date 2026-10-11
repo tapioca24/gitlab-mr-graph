@@ -1,81 +1,81 @@
 # gitlab-mr-graph
 
-GitLab の Merge Request のブランチ依存を可視化する CLI。GitLab CLI (`glab`) の認証を利用し、ローカルのブラウザで表示します。
+A CLI that visualizes branch dependencies between GitLab merge requests. It uses GitLab CLI (`glab`) authentication and displays the graph in your local browser.
 
-対象のリポジトリの開いている MR 全件を表示し、選択した MR の上流・下流を可視化します。
+It shows all open MRs in the target repository and highlights the upstream and downstream dependencies of the selected MR.
 
-## インストール
+## Installation
 
 ```sh
 go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest
 ```
 
-## すぐに試す
+## Quick start
 
-認証不要のサンプルデータで起動できます。
+Try it with sample data, without authentication.
 
 ```sh
 gitlab-mr-graph --demo
 ```
 
-100 MR を表示する場合:
+To display 100 MRs:
 
 ```sh
 gitlab-mr-graph --demo --demo-count 100
 ```
 
-## GitLab リポジトリで使う
+## Using it with a GitLab repository
 
-事前に [GitLab CLI](https://docs.gitlab.com/cli/) をインストールし、認証を済ませてください。
+Install and authenticate the [GitLab CLI](https://docs.gitlab.com/cli/) first.
 
-GitLab のリポジトリ内で実行します。
+Run the command inside a GitLab repository.
 
 ```sh
 gitlab-mr-graph
 ```
 
-ブラウザが開きます。Ctrl-C で終了します。
+Your browser opens automatically. Press Ctrl-C to stop.
 
 ```sh
-# ブラウザを自動で開かない
+# Do not open the browser automatically
 gitlab-mr-graph --no-open
-# ポートを指定
+# Specify a port
 gitlab-mr-graph --port 8080
-# 別の場所から対象を指定
+# Specify a repository from another directory
 gitlab-mr-graph --repo group/project --hostname gitlab.example.com
 gitlab-mr-graph --repo https://gitlab.example.com/group/project
 ```
 
-MR 情報は60秒間隔で更新します。タブが非表示の間は自動取得を止めます。
+MR data refreshes every 60 seconds. Automatic fetching pauses while the tab is hidden.
 
-## キーボードショートカット
+## Keyboard shortcuts
 
-| キー                  | 操作                                                                   | 条件                                                                      |
-| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `/`                   | Query にフォーカス                                                     |                                                                           |
-| `A`                   | Authored by me の切り替え                                              |                                                                           |
-| `S`                   | Assigned to me の切り替え                                              |                                                                           |
-| `B`                   | Hide bots の切り替え                                                   |                                                                           |
-| `U`                   | 自動更新の切り替え                                                     |                                                                           |
-| `R`                   | 更新                                                                   |                                                                           |
-| `T`                   | テーマの切り替え                                                       |                                                                           |
-| `F` / `0`             | グラフ全体を表示                                                       |                                                                           |
-| `+` / `=`             | 拡大                                                                   |                                                                           |
-| `-`                   | 縮小                                                                   |                                                                           |
-| `H` / `←`             | 直接の上流 MR へ移動                                                   | MR 選択中。表示中の候補から高さが近い MR を選び、移動先がなければそのまま |
-| `L` / `→`             | 直接の下流 MR へ移動                                                   | MR 選択中。表示中の候補から高さが近い MR を選び、移動先がなければそのまま |
-| `K` / `↑`             | 同じ直属の上流を共有する、上の MR へ移動                               | MR 選択中。表示中の MR が対象で、移動先がなければそのまま                 |
-| `J` / `↓`             | 同じ直属の上流を共有する、下の MR へ移動                               | MR 選択中。表示中の MR が対象で、移動先がなければそのまま                 |
-| `↑` / `↓` / `←` / `→` | グラフを移動                                                           | MR 未選択でグラフにフォーカス中                                           |
-| `Esc`                 | 詳細・ヘルプを閉じる・文字入力からグラフに戻る                         |                                                                           |
-| `?`                   | 全ショートカットの一覧を表示（ヘッダーのキーボードボタンでも表示可能） |                                                                           |
+| Key                   | Action                                                              | Conditions                                                                                                      |
+| --------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/`                   | Focus Query                                                         |                                                                                                                 |
+| `A`                   | Toggle Authored by me                                               |                                                                                                                 |
+| `S`                   | Toggle Assigned to me                                               |                                                                                                                 |
+| `B`                   | Toggle Hide bots                                                    |                                                                                                                 |
+| `U`                   | Toggle automatic refresh                                            |                                                                                                                 |
+| `R`                   | Refresh                                                             |                                                                                                                 |
+| `T`                   | Toggle theme                                                        |                                                                                                                 |
+| `F` / `0`             | Fit the entire graph                                                |                                                                                                                 |
+| `+` / `=`             | Zoom in                                                             |                                                                                                                 |
+| `-`                   | Zoom out                                                            |                                                                                                                 |
+| `H` / `←`             | Move to a direct upstream MR                                        | An MR is selected. Choose the visible candidate closest in vertical position; stay put if none exists.           |
+| `L` / `→`             | Move to a direct downstream MR                                      | An MR is selected. Choose the visible candidate closest in vertical position; stay put if none exists.           |
+| `K` / `↑`             | Move to the MR above that shares the same direct upstream dependency | An MR is selected. Only visible MRs are considered; stay put if none exists.                                      |
+| `J` / `↓`             | Move to the MR below that shares the same direct upstream dependency | An MR is selected. Only visible MRs are considered; stay put if none exists.                                      |
+| `↑` / `↓` / `←` / `→` | Pan the graph                                                       | No MR is selected and the graph has focus.                                                                       |
+| `Esc`                 | Close details or help, or return focus from text input to the graph  |                                                                                                                 |
+| `?`                   | Show all shortcuts (also available via the header's keyboard button) |                                                                                                                 |
 
-## 開発
+## Development
 
-ビルド・テスト・リリースの手順は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and release instructions.
 
-## 謝辞
+## Acknowledgments
 
 - [gh-pr-graph](https://github.com/orangain/gh-pr-graph)
 - [Catppuccin](https://github.com/catppuccin/catppuccin)
-- [Lucide](https://lucide.dev/): SVG 0.468.0 とライセンスをローカルに同梱
+- [Lucide](https://lucide.dev/): SVGs from version 0.468.0 and their license are bundled locally

@@ -1,56 +1,56 @@
-# 開発ガイド
+# Development guide
 
-## 必要な環境
+## Prerequisites
 
-- Go 1.24 以上
-- Node.js（JavaScript のテスト・構文チェック用）
-- make、POSIX shell、Bash
+- Go 1.24 or later
+- Node.js (for JavaScript tests and syntax checks)
+- make, a POSIX shell, and Bash
 
-実 GitLab に接続する場合は、認証済みの GitLab CLI (`glab`) も必要です。
+Connecting to GitLab also requires an authenticated GitLab CLI (`glab`).
 
-## ビルドと動作確認
+## Build and try it out
 
 ```sh
 make build
 ./bin/gitlab-mr-graph --demo
 ```
 
-実行ファイルは `bin/gitlab-mr-graph` に生成されます。デモはサンプルデータを使うため、GitLab の認証は不要です。
+The executable is generated at `bin/gitlab-mr-graph`. The demo uses sample data, so GitLab authentication is not required.
 
-## テストと静的チェック
+## Tests and static checks
 
 ```sh
 make test
 make check
 ```
 
-`make test` は race detector を有効にして Go テストを実行します。テストは固定した API 応答とローカル HTTP サーバーを使い、実 GitLab への接続は不要です。
+`make test` runs Go tests with the race detector enabled. Tests use fixed API responses and local HTTP servers, so no connection to GitLab is required.
 
-JavaScript は Node.js 標準のテストランナーで絞り込みとグラフ配置を検証します。追加パッケージのインストールは不要です。
+JavaScript tests use Node.js's built-in test runner to verify filtering and graph layout. No additional packages need to be installed.
 
-`make check` は `go vet`、JavaScript と shell の構文チェックを実行します。CI は macOS / Linux と Go 1.24 / 1.26 の組み合わせでテスト・チェック・ビルドを実行します。
+`make check` runs `go vet` and syntax checks for JavaScript and shell scripts. CI runs tests, checks, and builds on macOS / Linux with Go 1.24 / 1.26.
 
-## 配布ファイルのビルド
+## Build release artifacts
 
 ```sh
 bash scripts/build-release.sh v0.1.0
 ```
 
-`dist/` に macOS / Linux × arm64 / amd64 の実行ファイルと `checksums.txt` を生成します。バージョンは `vMAJOR.MINOR.PATCH` 形式で指定してください。配布ビルドにはこのバージョンを埋め込みます。`go install ...@バージョン` の場合は、Go のビルド情報からモジュールのバージョンを表示します。
+This generates executables for macOS / Linux × arm64 / amd64 and `checksums.txt` in `dist/`. Specify the version in `vMAJOR.MINOR.PATCH` format. Release builds embed this version. When installed with `go install ...@version`, the tool displays the module version from Go's build information.
 
-## リリース
+## Releases
 
-Codex で `$release` を呼び出すと、リポジトリ内の [release スキル](.agents/skills/release/SKILL.md) が前回リリースからの変更を調べ、次のバージョンを理由付きで提案します。検証後、ユーザーがバージョンと対象コミットを確認して確定すると、タグの push と公開確認を実行します。
+Invoke `$release` in Codex to use the repository's [release skill](.agents/skills/release/SKILL.md). It reviews changes since the previous release and proposes the next version with a rationale. After validation, once the user confirms the version and target commit, it pushes the tag and verifies publication.
 
-対象は通常 `origin/main` の先端で、未コミット変更や未 push のコミットがある場合は停止します。
+The target is normally the tip of `origin/main`. The skill stops if there are uncommitted changes or unpushed commits.
 
-公開するコミットに `vMAJOR.MINOR.PATCH` 形式のタグを付け、GitHub に push します。
+Tag the commit to publish in `vMAJOR.MINOR.PATCH` format and push the tag to GitHub.
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Release workflow がテストと静的チェック、配布ファイルのビルドを実行し、実行ファイルとチェックサムを GitHub Release に公開します。
+The Release workflow runs tests and static checks, builds release artifacts, and publishes the executables and checksums to a GitHub Release.
 
-同じタグは `go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest` の配布にも使われます。インストールスクリプトやツール本体の自動更新機能は提供しません。
+The same tags are also used for distribution via `go install github.com/tapioca24/gitlab-mr-graph/cmd/gitlab-mr-graph@latest`. No installation script or built-in automatic update feature is provided.
