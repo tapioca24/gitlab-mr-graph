@@ -36,6 +36,18 @@ gitlab-mr-graph --repo https://gitlab.example.com/group/project
 
 MR data refreshes every 60 seconds. Automatic fetching pauses while the tab is hidden.
 
+### Run as a glab subcommand
+
+Optionally, register a shell alias to run as `glab mr-graph`:
+
+```sh
+glab alias set --shell mr-graph 'gitlab-mr-graph "$@"'
+glab mr-graph
+glab mr-graph --no-open --port 8080
+```
+
+`gitlab-mr-graph` must be on your PATH.
+
 ### Demo
 
 Try it with sample data, without authentication.
