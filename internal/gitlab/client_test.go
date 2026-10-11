@@ -154,6 +154,9 @@ func TestApprovalCountsDoNotInventRequirements(t *testing.T) {
 func TestResolveUsesGlabContextAndEscapesExplicitPath(t *testing.T) {
 	for _, path := range []string{"", "group/subgroup/project"} {
 		c := Client{Repo: path, Run: func(ctx context.Context, args []string) ([]byte, error) {
+			if args[1] == "user" {
+				return []byte(`{"id":9,"username":"me","name":"My Name","avatar_url":"https://gitlab.example.test/avatar.png"}`), nil
+			}
 			want := "projects/:fullpath"
 			if path != "" {
 				want = "projects/group%2Fsubgroup%2Fproject"
@@ -170,5 +173,53 @@ func TestResolveUsesGlabContextAndEscapesExplicitPath(t *testing.T) {
 		if c.Hostname != "gitlab.example.test" {
 			t.Fatal("resolved host was not pinned")
 		}
+		if p.CurrentUser == nil || p.CurrentUser.ID != 9 || p.CurrentUser.AvatarURL == "" {
+			t.Fatal("current user was not resolved")
+		}
+	}
+}
+
+func TestUserLabelsAndApproverHydration(t *testing.T) {
+	c := Client{Run: func(ctx context.Context, args []string) ([]byte, error) {
+		switch {
+		case strings.Contains(args[1], "?"):
+			if !strings.Contains(args[1], "with_labels_details=true") {
+				t.Error("label details were not requested")
+			}
+			return []byte(`[{"id":1,"iid":1,"author":{"id":7,"username":"author","name":"Author Name","avatar_url":"https://example.test/a.png"},"assignees":[{"id":8,"username":"assignee","name":"Assigned User","avatar_url":"https://example.test/b.png"}],"labels":[{"name":"backend","color":"#1e66f5","text_color":"#ffffff"},"legacy"]}]`), nil
+		case strings.HasSuffix(args[1], "/approvals"):
+			return []byte(`{"approved_by":[{"user":{"id":9,"username":"approver","name":"Approver Name","avatar_url":"https://example.test/c.png"}}]}`), nil
+		case strings.HasSuffix(args[1], "/approval_state"):
+			return []byte(`{"rules":[{"approved":true}]}`), nil
+		default:
+			return []byte(`{"id":1,"iid":1,"head_pipeline":null}`), nil
+		}
+	}}
+	var result []model.MR
+	if err := c.Load(context.Background(), model.Project{ID: 1}, func(mrs []model.MR, _ []string) { result = mrs }); err != nil {
+		t.Fatal(err)
+	}
+	m := result[0]
+	if m.Author != "author" || m.AuthorUser.Name != "Author Name" || m.AuthorUser.AvatarURL == "" || len(m.Assignees) != 1 || m.Assignees[0].ID != 8 {
+		t.Fatalf("missing users: %+v", m)
+	}
+	if len(m.Labels) != 2 || m.Labels[0].Color != "#1e66f5" || m.Labels[0].TextColor != "#ffffff" || m.Labels[1].Name != "legacy" {
+		t.Fatalf("missing labels: %+v", m.Labels)
+	}
+	if m.Approval.State != "met" || len(m.Approval.Users) != 1 || m.Approval.Users[0].Name != "Approver Name" {
+		t.Fatalf("missing approvers after applying rules: %+v", m.Approval)
+	}
+}
+
+func TestResolveKeepsProjectWhenCurrentUserUnavailable(t *testing.T) {
+	c := Client{Run: func(ctx context.Context, args []string) ([]byte, error) {
+		if args[1] == "user" {
+			return nil, errors.New("unavailable")
+		}
+		return []byte(`{"id":1,"path_with_namespace":"group/project","web_url":"https://example.test/group/project"}`), nil
+	}}
+	p, err := c.Resolve(context.Background())
+	if err != nil || p.ID != 1 || p.CurrentUser != nil {
+		t.Fatalf("%+v %v", p, err)
 	}
 }

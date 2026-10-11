@@ -8,6 +8,20 @@ type Project struct {
 	Path          string `json:"path"`
 	URL           string `json:"url"`
 	DefaultBranch string `json:"defaultBranch"`
+	CurrentUser   *User  `json:"currentUser,omitempty"`
+}
+
+type User struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatarUrl"`
+}
+
+type Label struct {
+	Name      string `json:"name"`
+	Color     string `json:"color"`
+	TextColor string `json:"textColor"`
 }
 
 type Approval struct {
@@ -16,6 +30,7 @@ type Approval struct {
 	CountKnown bool   `json:"countKnown"`
 	Required   *int   `json:"required,omitempty"`
 	Left       *int   `json:"left,omitempty"`
+	Users      []User `json:"users"`
 }
 
 type MR struct {
@@ -24,6 +39,9 @@ type MR struct {
 	Title           string    `json:"title"`
 	URL             string    `json:"url"`
 	Author          string    `json:"author"`
+	AuthorUser      User      `json:"authorUser"`
+	Assignees       []User    `json:"assignees"`
+	Labels          []Label   `json:"labels"`
 	SourceProjectID int       `json:"sourceProjectId"`
 	TargetProjectID int       `json:"targetProjectId"`
 	SourceBranch    string    `json:"sourceBranch"`

@@ -98,32 +98,70 @@ func (c *Client) Resolve(ctx context.Context) (model.Project, error) {
 			c.Hostname = u.Host
 		}
 	}
-	return model.Project{ID: raw.ID, Name: raw.Name, Path: raw.Path, URL: raw.URL, DefaultBranch: raw.DefaultBranch}, nil
+	p := model.Project{ID: raw.ID, Name: raw.Name, Path: raw.Path, URL: raw.URL, DefaultBranch: raw.DefaultBranch}
+	var user rawUser
+	if err := c.get(ctx, "user", &user); err == nil && user.ID > 0 && user.Username != "" {
+		u := user.model()
+		p.CurrentUser = &u
+	}
+	return p, nil
+}
+
+type rawUser struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+func (u rawUser) model() model.User {
+	return model.User{ID: u.ID, Username: u.Username, Name: u.Name, AvatarURL: u.AvatarURL}
 }
 
 type rawMR struct {
-	ID     int    `json:"id"`
-	IID    int    `json:"iid"`
-	Title  string `json:"title"`
-	URL    string `json:"web_url"`
-	Author struct {
-		Username string `json:"username"`
-	} `json:"author"`
-	SourceProjectID     int             `json:"source_project_id"`
-	TargetProjectID     int             `json:"target_project_id"`
-	SourceBranch        string          `json:"source_branch"`
-	TargetBranch        string          `json:"target_branch"`
-	Draft               bool            `json:"draft"`
-	WIP                 bool            `json:"work_in_progress"`
-	UpdatedAt           time.Time       `json:"updated_at"`
-	HasConflicts        *bool           `json:"has_conflicts"`
-	MergeStatus         string          `json:"merge_status"`
-	DetailedMergeStatus string          `json:"detailed_merge_status"`
-	Pipeline            json.RawMessage `json:"head_pipeline"`
+	ID                  int               `json:"id"`
+	IID                 int               `json:"iid"`
+	Title               string            `json:"title"`
+	URL                 string            `json:"web_url"`
+	Author              rawUser           `json:"author"`
+	Assignees           []rawUser         `json:"assignees"`
+	Labels              []json.RawMessage `json:"labels"`
+	SourceProjectID     int               `json:"source_project_id"`
+	TargetProjectID     int               `json:"target_project_id"`
+	SourceBranch        string            `json:"source_branch"`
+	TargetBranch        string            `json:"target_branch"`
+	Draft               bool              `json:"draft"`
+	WIP                 bool              `json:"work_in_progress"`
+	UpdatedAt           time.Time         `json:"updated_at"`
+	HasConflicts        *bool             `json:"has_conflicts"`
+	MergeStatus         string            `json:"merge_status"`
+	DetailedMergeStatus string            `json:"detailed_merge_status"`
+	Pipeline            json.RawMessage   `json:"head_pipeline"`
 }
 
 func (r rawMR) model() model.MR {
+	assignees := make([]model.User, 0, len(r.Assignees))
+	for _, u := range r.Assignees {
+		assignees = append(assignees, u.model())
+	}
+	labels := make([]model.Label, 0, len(r.Labels))
+	for _, data := range r.Labels {
+		var label struct {
+			Name      string `json:"name"`
+			Color     string `json:"color"`
+			TextColor string `json:"text_color"`
+		}
+		if json.Unmarshal(data, &label) == nil && label.Name != "" {
+			labels = append(labels, model.Label{Name: label.Name, Color: label.Color, TextColor: label.TextColor})
+		} else {
+			var name string
+			if json.Unmarshal(data, &name) == nil && name != "" {
+				labels = append(labels, model.Label{Name: name})
+			}
+		}
+	}
 	return model.MR{ID: r.ID, IID: r.IID, Title: r.Title, URL: r.URL, Author: r.Author.Username,
+		AuthorUser: r.Author.model(), Assignees: assignees, Labels: labels,
 		SourceProjectID: r.SourceProjectID, TargetProjectID: r.TargetProjectID, SourceBranch: r.SourceBranch,
 		TargetBranch: r.TargetBranch, Draft: r.Draft || r.WIP, UpdatedAt: r.UpdatedAt,
 		CI: "loading", Conflict: "loading", Approval: model.Approval{State: "loading"}, Warnings: []string{}}
@@ -164,6 +202,15 @@ type rawApproval struct {
 
 func approval(r rawApproval) model.Approval {
 	a := model.Approval{State: "unknown", Count: len(r.ApprovedBy), CountKnown: r.ApprovedBy != nil}
+	a.Users = []model.User{}
+	for _, data := range r.ApprovedBy {
+		var entry struct {
+			User rawUser `json:"user"`
+		}
+		if json.Unmarshal(data, &entry) == nil && (entry.User.ID > 0 || entry.User.Username != "") {
+			a.Users = append(a.Users, entry.User.model())
+		}
+	}
 	// Legacy aggregate counts do not establish that every approval rule is met.
 	if a.Count > 0 {
 		a.State = "received"
@@ -209,7 +256,7 @@ func (c *Client) Load(ctx context.Context, p model.Project, publish func([]model
 	seen := map[int]bool{}
 	for page := 1; ; page++ {
 		var batch []rawMR
-		endpoint := fmt.Sprintf("projects/%d/merge_requests?state=opened&scope=all&per_page=100&page=%d", p.ID, page)
+		endpoint := fmt.Sprintf("projects/%d/merge_requests?state=opened&scope=all&with_labels_details=true&per_page=100&page=%d", p.ID, page)
 		if err := c.get(ctx, endpoint, &batch); err != nil {
 			return fmt.Errorf("MR 一覧の取得に失敗しました (ページ %d): %w", page, err)
 		}

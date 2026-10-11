@@ -14,7 +14,11 @@ func TestExecRunnerUsesArgumentsAndDoesNotLeakStderr(t *testing.T) {
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("GLAB_TEST_ARGUMENTS", arguments)
 	script := `#!/bin/sh
-printf '%s\n' "$@" > "$GLAB_TEST_ARGUMENTS"
+printf '%s\n' "$@" >> "$GLAB_TEST_ARGUMENTS"
+if [ "$2" = "user" ]; then
+  printf '{"id":2,"username":"me"}'
+  exit 0
+fi
 printf '{"id":1,"path_with_namespace":"group/project","default_branch":"main"}'
 `
 	path := filepath.Join(dir, "glab")
@@ -28,6 +32,9 @@ printf '{"id":1,"path_with_namespace":"group/project","default_branch":"main"}'
 	got, _ := os.ReadFile(arguments)
 	if !strings.Contains(string(got), "projects/group%2Fproject\n--method\nGET\n") {
 		t.Fatalf("args: %s", got)
+	}
+	if !strings.Contains(string(got), "api\nuser\n--method\nGET\n") {
+		t.Fatalf("current user request missing: %s", got)
 	}
 	if err := os.WriteFile(path, []byte("#!/bin/sh\necho 'fake-private-diagnostic' >&2\nexit 1\n"), 0755); err != nil {
 		t.Fatal(err)
