@@ -1,0 +1,3 @@
+interface:
+  display_name: "リリース"
+  short_description: "変更に応じてバージョンを提案し、ユーザー確認後にリリースする"

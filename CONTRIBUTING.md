@@ -40,6 +40,10 @@ bash scripts/build-release.sh v0.1.0
 
 ## リリース
 
+Codex で `$release` を呼び出すと、リポジトリ内の [release スキル](.agents/skills/release/SKILL.md) が前回リリースからの変更を調べ、次のバージョンを理由付きで提案します。検証後、ユーザーがバージョンと対象コミットを確認して確定すると、タグの push と公開確認を実行します。
+
+対象は通常 `origin/main` の先端で、未コミット変更や未 push のコミットがある場合は停止します。
+
 公開するコミットに `vMAJOR.MINOR.PATCH` 形式のタグを付け、GitHub に push します。
 
 ```sh
