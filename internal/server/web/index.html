@@ -35,14 +35,29 @@
         >
       </div>
       <div class="filters" role="group" aria-label="MR の絞り込み">
-        <label class="filter-check"
+        <label class="filter-check" title="自分が作成した MR (A)"
           ><input id="authored" type="checkbox" aria-keyshortcuts="A" />Authored
           by me</label
         >
-        <label class="filter-check"
+        <label class="filter-check" title="自分が担当する MR (S)"
           ><input id="assigned" type="checkbox" aria-keyshortcuts="S" />Assigned
           to me</label
         >
+        <label class="filter-check" title="承認待ち MR (W)"
+          ><input id="approval-waiting" type="checkbox" aria-keyshortcuts="W" />Awaiting approval</label
+        >
+        <details id="label-filter" class="label-filter">
+          <summary id="label-filter-summary" aria-keyshortcuts="G" title="Labels を開閉 (G)">Labels</summary>
+          <div class="label-filter-panel">
+            <div class="label-filter-heading">
+              <span>Match all labels</span>
+              <button id="clear-labels" type="button" disabled>Clear</button>
+            </div>
+            <div id="label-options" role="group" aria-label="ラベルで絞り込み">
+              <p class="label-filter-empty">No labels</p>
+            </div>
+          </div>
+        </details>
         <label
           class="filter-check"
           title="Dependabot / Renovate の MR を非表示にする (B)"
@@ -242,6 +257,26 @@
             <td>Assigned to me を切り替え</td>
           </tr>
           <tr>
+            <th><kbd>W</kbd></th>
+            <td>Awaiting approval を切り替え</td>
+          </tr>
+          <tr>
+            <th><kbd>G</kbd></th>
+            <td>Labels を開閉（開くと最初のラベルにフォーカス）</td>
+          </tr>
+          <tr>
+            <th><kbd>J</kbd> / <kbd>↓</kbd></th>
+            <td>ラベル欄で次のラベルへ（末尾で停止）</td>
+          </tr>
+          <tr>
+            <th><kbd>K</kbd> / <kbd>↑</kbd></th>
+            <td>ラベル欄で前のラベルへ（先頭で停止）</td>
+          </tr>
+          <tr>
+            <th><kbd>Tab</kbd> / <kbd>Space</kbd></th>
+            <td>ラベル欄で項目を移動 / 選択を切り替え</td>
+          </tr>
+          <tr>
             <th><kbd>B</kbd></th>
             <td>Bot の非表示を切り替え</td>
           </tr>
@@ -291,7 +326,7 @@
           </tr>
           <tr>
             <th><kbd>Esc</kbd></th>
-            <td>詳細・ヘルプを閉じる / 入力から戻る</td>
+            <td>詳細・ヘルプ・ラベル欄を閉じる / 入力から戻る</td>
           </tr>
           <tr>
             <th><kbd>?</kbd></th>

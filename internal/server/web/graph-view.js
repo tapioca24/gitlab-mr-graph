@@ -8,6 +8,9 @@ function isBot(mr) {
 }
 function matchesMR(mr, filters, user) {
   if (filters.hideBots && isBot(mr)) return false;
+  if (filters.approvalWaiting && mr.approval?.state !== "waiting") return false;
+  const labels = new Set((mr.labels ?? []).map((label) => label.name));
+  if (!(filters.labels ?? []).every((name) => labels.has(name))) return false;
   const sameUser = (person) =>
     !!user &&
     ((user.id > 0 && person?.id === user.id) ||

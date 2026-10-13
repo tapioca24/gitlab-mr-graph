@@ -12,7 +12,14 @@ const state = {
   nextRefresh: Date.now() + 60000,
   requesting: false,
   fingerprint: "",
-  filters: { authored: false, assigned: false, hideBots: false, query: "" },
+  filters: {
+    authored: false,
+    assigned: false,
+    hideBots: false,
+    approvalWaiting: false,
+    labels: [],
+    query: "",
+  },
   visible: new Set(),
   matches: new Set(),
   positions: new Map(),
@@ -393,15 +400,41 @@ function resetFilters() {
     authored: false,
     assigned: false,
     hideBots: false,
+    approvalWaiting: false,
+    labels: [],
     query: "",
   };
   for (const [id, key] of [
     ["authored", "authored"],
     ["assigned", "assigned"],
     ["hide-bots", "hideBots"],
+    ["approval-waiting", "approvalWaiting"],
   ])
     $(`#${id}`).checked = state.filters[key];
   $("#query").value = "";
+  renderLabelFilters();
+}
+let labelOptionsKey = "";
+function renderLabelFilters() {
+  // Keep selected labels available even if they disappear on refresh.
+  const names = [...new Set([
+    ...mrNodes().flatMap((n) => (n.mr.labels ?? []).map((label) => label.name)),
+    ...state.filters.labels,
+  ])].sort((a, b) => a.localeCompare(b));
+  const key = JSON.stringify(names);
+  if (key !== labelOptionsKey) {
+    labelOptionsKey = key;
+    $("#label-options").innerHTML = names.length
+      ? names.map((name) => `<label class="filter-check label-option"><input type="checkbox" value="${escapeHTML(name)}" />${escapeHTML(name)}</label>`).join("")
+      : '<p class="label-filter-empty">No labels</p>';
+  }
+  for (const input of $("#label-options").querySelectorAll("input"))
+    input.checked = state.filters.labels.includes(input.value);
+  const count = state.filters.labels.length;
+  $("#label-filter-summary").textContent = count ? `Labels (${count})` : "Labels";
+  $("#label-filter-summary").title = `Labels を開閉 (G)${count ? ` · ${state.filters.labels.join(" / ")}` : ""}`;
+  $("#label-filter").classList.toggle("active", count > 0);
+  $("#clear-labels").disabled = count === 0;
 }
 function applyFilters() {
   renderGraph();
@@ -536,6 +569,7 @@ async function poll() {
       state.fingerprint = fingerprint;
       const focusNodeID = document.activeElement?.closest(".node")?.dataset.id;
       const focusLink = document.activeElement?.classList.contains("node-link");
+      renderLabelFilters();
       renderGraph();
       renderInspector();
       if (focusNodeID)
@@ -635,11 +669,51 @@ for (const [id, key] of [
   ["authored", "authored"],
   ["assigned", "assigned"],
   ["hide-bots", "hideBots"],
+  ["approval-waiting", "approvalWaiting"],
 ])
   $(`#${id}`).addEventListener("change", (e) => {
     state.filters[key] = e.target.checked;
     applyFilters();
   });
+$("#label-options").addEventListener("change", () => {
+  state.filters.labels = [...$("#label-options").querySelectorAll("input:checked")]
+    .map((input) => input.value);
+  renderLabelFilters();
+  applyFilters();
+});
+$("#clear-labels").addEventListener("click", () => {
+  state.filters.labels = [];
+  renderLabelFilters();
+  applyFilters();
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#label-filter")) $("#label-filter").open = false;
+});
+$("#label-filter").addEventListener("keydown", (e) => {
+  if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    $("#label-filter").open = false;
+    $("#label-filter-summary").focus();
+    return;
+  }
+  if (!$("#label-filter").open) return;
+  const step = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[
+    e.key.length === 1 ? e.key.toLowerCase() : e.key
+  ];
+  if (!step) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const inputs = [...$("#label-options").querySelectorAll("input")];
+  if (!inputs.length) return;
+  const index = inputs.indexOf(e.target);
+  const next = index < 0
+    ? (step > 0 ? 0 : inputs.length - 1)
+    : Math.max(0, Math.min(inputs.length - 1, index + step));
+  inputs[next].focus({ preventScroll: true });
+  inputs[next].closest(".label-option").scrollIntoView({ block: "nearest" });
+});
 $("#query").addEventListener("input", (e) => {
   state.filters.query = e.target.value;
   applyFilters();
@@ -778,6 +852,8 @@ const shortcutControls = {
   "/": "query",
   a: "authored",
   s: "assigned",
+  w: "approval-waiting",
+  g: "label-filter-summary",
   b: "hide-bots",
   u: "auto",
   r: "refresh",
@@ -842,7 +918,15 @@ document.addEventListener("keydown", (e) => {
   if (control.disabled) return;
   e.preventDefault();
   if (id === "query") control.focus({ preventScroll: true });
-  else control.click();
+  else {
+    control.click();
+    if (id === "label-filter-summary") {
+      const target = $("#label-filter").open
+        ? $("#label-options input") ?? control
+        : control;
+      target.focus({ preventScroll: true });
+    }
+  }
 });
 $("#help").addEventListener("click", () => $("#shortcut-help").showModal());
 $("#close-help").addEventListener("click", () => $("#shortcut-help").close());

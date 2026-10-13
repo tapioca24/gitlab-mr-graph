@@ -76,6 +76,11 @@ gitlab-mr-graph --demo --demo-count 100
 | `/`                   | Focus Query                                                         |                                                                                                                 |
 | `A`                   | Toggle Authored by me                                               |                                                                                                                 |
 | `S`                   | Toggle Assigned to me                                               |                                                                                                                 |
+| `W`                   | Toggle Awaiting approval                                            |                                                                                                                 |
+| `G`                   | Open or close Labels; focus the first label when opening             |                                                                                                                 |
+| `J` / `↓`             | Focus the next label; stop at the last label                         | Focus is in the open Labels panel.                                                                              |
+| `K` / `↑`             | Focus the previous label; stop at the first label                    | Focus is in the open Labels panel.                                                                              |
+| `Tab` / `Space`       | Move between controls / toggle a label                               | Focus is in the Labels panel.                                                                                   |
 | `B`                   | Toggle Hide bots                                                    |                                                                                                                 |
 | `U`                   | Toggle automatic refresh                                            |                                                                                                                 |
 | `R`                   | Refresh                                                             |                                                                                                                 |
@@ -85,10 +90,10 @@ gitlab-mr-graph --demo --demo-count 100
 | `-`                   | Zoom out                                                            |                                                                                                                 |
 | `H` / `←`             | Move to a direct upstream MR                                        | An MR is selected. Choose the visible candidate closest in vertical position; stay put if none exists.           |
 | `L` / `→`             | Move to a direct downstream MR                                      | An MR is selected. Choose the visible candidate closest in vertical position; stay put if none exists.           |
-| `K` / `↑`             | Move to the MR above that shares the same direct upstream dependency | An MR is selected. Only visible MRs are considered; stay put if none exists.                                      |
-| `J` / `↓`             | Move to the MR below that shares the same direct upstream dependency | An MR is selected. Only visible MRs are considered; stay put if none exists.                                      |
+| `K` / `↑`             | Move to the MR above that shares the same direct upstream dependency | An MR is selected and focus is outside Labels. Only visible MRs are considered; stay put if none exists.                                      |
+| `J` / `↓`             | Move to the MR below that shares the same direct upstream dependency | An MR is selected and focus is outside Labels. Only visible MRs are considered; stay put if none exists.                                      |
 | `↑` / `↓` / `←` / `→` | Pan the graph                                                       | No MR is selected and the graph has focus.                                                                       |
-| `Esc`                 | Close details or help, or return focus from text input to the graph  |                                                                                                                 |
+| `Esc`                 | Close details, help or Labels, or return focus from text input to the graph  |                                                                                                                 |
 | `?`                   | Show all shortcuts (also available via the header's keyboard button) |                                                                                                                 |
 
 ## Development

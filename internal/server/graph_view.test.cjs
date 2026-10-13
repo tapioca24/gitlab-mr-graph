@@ -191,3 +191,44 @@ test("cycles and multiple parents retain all nodes without infinite traversal", 
   for (const p of positions.values())
     assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y));
 });
+
+test("approval waiting includes drafts and excludes unknown or completed approval", () => {
+  const filters = { ...all, approvalWaiting: true };
+  assert.ok(matchesMR(mr(1, { draft: true, approval: { state: "waiting" } }), filters, me));
+  for (const state of ["met", "not_required", "received", "unknown", "loading"])
+    assert.equal(matchesMR(mr(1, { approval: { state } }), filters, me), false);
+  assert.equal(matchesMR(mr(1), filters, me), false);
+});
+
+test("selected labels require every exact label and combine with existing filters", () => {
+  const m = mr(1, {
+    author: "me", authorUser: me, approval: { state: "waiting" },
+    labels: [{ name: "backend" }, { name: "urgent" }],
+  });
+  const filters = { ...all, approvalWaiting: true, labels: ["backend", "urgent"] };
+  assert.ok(matchesMR(m, { ...filters, authored: true, query: "Change" }, me));
+  assert.equal(matchesMR(m, { ...filters, labels: ["backend", "missing"] }, me), false);
+  assert.equal(matchesMR(m, { ...filters, labels: ["Backend"] }, me), false);
+  assert.equal(matchesMR(mr(2, { approval: { state: "waiting" } }), filters, me), false);
+  assert.equal(matchesMR({ ...m, approval: { state: "met" } }, filters, me), false);
+  assert.equal(matchesMR(m, { ...filters, assigned: true }, me), false);
+  assert.equal(matchesMR(m, { ...filters, query: "missing" }, me), false);
+  assert.equal(matchesMR({ ...m, author: "renovate", authorUser: {} }, { ...filters, hideBots: true }, me), false);
+  assert.ok(matchesMR(mr(3), { ...all, labels: [] }, me));
+});
+
+test("approval and label filters preserve nonmatching ancestors", () => {
+  const g = {
+    project: { currentUser: me },
+    nodes: [
+      { id: "main", kind: "root", label: "main" },
+      node(1, { approval: { state: "met" } }),
+      node(2, { approval: { state: "waiting" }, labels: [{ name: "backend" }, { name: "urgent" }] }),
+      node(3, { approval: { state: "waiting" }, labels: [{ name: "backend" }] }),
+    ],
+    edges: [{ source: "main", target: "1" }, { source: "1", target: "2" }, { source: "main", target: "3" }],
+  };
+  const { matches, visible } = graphVisibility(g, { ...all, approvalWaiting: true, labels: ["backend", "urgent"] });
+  assert.deepEqual([...matches], ["2"]);
+  assert.deepEqual([...visible].sort(), ["1", "2", "main"]);
+});
