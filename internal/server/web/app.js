@@ -139,7 +139,7 @@ function approvalText(a, compact = false) {
   if (a.state === "not_required") return "必須承認なし";
   if (a.state === "unapproved") return "未承認";
   if (a.state === "received")
-    return `承認 ${a.count}件（必須条件不明）`;
+    return `承認${a.count}件（必須条件不明）`;
   if (a.state === "loading") return "確認中";
   return "承認条件不明";
 }
