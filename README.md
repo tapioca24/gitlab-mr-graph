@@ -83,7 +83,7 @@ gitlab-mr-graph --demo --demo-count 100
 | `J` / `↓`             | Focus the next label; stop at the last label                         | Focus is in the open Labels panel.                                                                              |
 | `K` / `↑`             | Focus the previous label; stop at the first label                    | Focus is in the open Labels panel.                                                                              |
 | `Tab` / `Space`       | Move between controls / toggle a label                               | Focus is in the Labels panel.                                                                                   |
-| `B`                   | Toggle Hide bots                                                    |                                                                                                                 |
+| `B`                   | Toggle Show bots                                                    |                                                                                                                 |
 | `U`                   | Toggle automatic refresh                                            |                                                                                                                 |
 | `R`                   | Refresh                                                             |                                                                                                                 |
 | `T`                   | Toggle theme                                                        |                                                                                                                 |

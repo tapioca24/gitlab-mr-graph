@@ -7,7 +7,7 @@ function isBot(mr) {
   );
 }
 function matchesMR(mr, filters, user) {
-  if (filters.hideBots && isBot(mr)) return false;
+  if (!filters.showBots && isBot(mr)) return false;
   if (filters.approvalWaiting && !["waiting", "unapproved"].includes(mr.approval?.state)) return false;
   const labels = new Set((mr.labels ?? []).map((label) => label.name));
   if (!(filters.labels ?? []).every((name) => labels.has(name))) return false;

@@ -8,7 +8,7 @@ const {
   neighboringMR,
 } = require("./web/graph-view.js");
 const me = { id: 1, username: "me" };
-const all = { authored: false, assigned: false, hideBots: false, query: "" };
+const all = { authored: false, assigned: false, showBots: true, query: "" };
 const mr = (id, extra = {}) => ({
   iid: id,
   title: `Change ${id}`,
@@ -133,7 +133,7 @@ test("only Dependabot and Renovate accounts count as bots", () => {
     assert.ok(isBot(mr(1, { author })));
     assert.ok(matchesMR(mr(1, { author }), all, me));
     assert.equal(
-      matchesMR(mr(1, { author }), { ...all, hideBots: true }, me),
+      matchesMR(mr(1, { author }), { ...all, showBots: false }, me),
       false,
     );
   }
@@ -214,7 +214,7 @@ test("selected labels require every exact label and combine with existing filter
   assert.equal(matchesMR({ ...m, approval: { state: "met" } }, filters, me), false);
   assert.equal(matchesMR(m, { ...filters, assigned: true }, me), false);
   assert.equal(matchesMR(m, { ...filters, query: "missing" }, me), false);
-  assert.equal(matchesMR({ ...m, author: "renovate", authorUser: {} }, { ...filters, hideBots: true }, me), false);
+  assert.equal(matchesMR({ ...m, author: "renovate", authorUser: {} }, { ...filters, showBots: false }, me), false);
   assert.ok(matchesMR(mr(3), { ...all, labels: [] }, me));
 });
 

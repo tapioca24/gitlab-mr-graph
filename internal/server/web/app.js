@@ -15,7 +15,7 @@ const state = {
   filters: {
     authored: false,
     assigned: false,
-    hideBots: false,
+    showBots: false,
     approvalWaiting: false,
     labels: [],
     query: "",
@@ -400,7 +400,7 @@ function resetFilters() {
   state.filters = {
     authored: false,
     assigned: false,
-    hideBots: false,
+    showBots: true,
     approvalWaiting: false,
     labels: [],
     query: "",
@@ -408,7 +408,7 @@ function resetFilters() {
   for (const [id, key] of [
     ["authored", "authored"],
     ["assigned", "assigned"],
-    ["hide-bots", "hideBots"],
+    ["show-bots", "showBots"],
     ["approval-waiting", "approvalWaiting"],
   ])
     $(`#${id}`).checked = state.filters[key];
@@ -669,7 +669,7 @@ $("#inspector-content").addEventListener("click", (e) => {
 for (const [id, key] of [
   ["authored", "authored"],
   ["assigned", "assigned"],
-  ["hide-bots", "hideBots"],
+  ["show-bots", "showBots"],
   ["approval-waiting", "approvalWaiting"],
 ])
   $(`#${id}`).addEventListener("change", (e) => {
@@ -855,7 +855,7 @@ const shortcutControls = {
   s: "assigned",
   w: "approval-waiting",
   g: "label-filter-summary",
-  b: "hide-bots",
+  b: "show-bots",
   u: "auto",
   r: "refresh",
   t: "theme",
