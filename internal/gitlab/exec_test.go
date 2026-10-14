@@ -58,6 +58,7 @@ func TestExecRunnerPreservesHTTPStatusWithoutLeakingDiagnostics(t *testing.T) {
 		{"not found", "glab: private-diagnostic (HTTP 404)", 404},
 		{"forbidden", "glab: private-diagnostic (HTTP 403)", 403},
 		{"server error", "glab: private-diagnostic (HTTP 500)", 500},
+		{"glab 1.x plain", "glab: HTTP 404\n{\"error\":\"404 Not Found\"}", 404},
 		{"no status", "private-diagnostic 404", 0},
 	} {
 		t.Run(test.name, func(t *testing.T) {

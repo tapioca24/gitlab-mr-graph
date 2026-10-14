@@ -30,7 +30,7 @@ type apiError struct {
 func (e *apiError) Error() string { return e.err.Error() }
 func (e *apiError) Unwrap() error { return e.err }
 
-var httpStatusPattern = regexp.MustCompile(`\(HTTP ([0-9]{3})\)(?:\r?\n|$)`)
+var httpStatusPattern = regexp.MustCompile(`(?m)(?:\(HTTP |^glab: HTTP )([0-9]{3})\)?\r?$`)
 
 type Client struct {
 	Run      Runner
