@@ -195,6 +195,7 @@ test("cycles and multiple parents retain all nodes without infinite traversal", 
 test("approval waiting includes drafts and excludes unknown or completed approval", () => {
   const filters = { ...all, approvalWaiting: true };
   assert.ok(matchesMR(mr(1, { draft: true, approval: { state: "waiting" } }), filters, me));
+  assert.ok(matchesMR(mr(1, { draft: true, approval: { state: "unapproved" } }), filters, me));
   for (const state of ["met", "not_required", "received", "unknown", "loading"])
     assert.equal(matchesMR(mr(1, { approval: { state } }), filters, me), false);
   assert.equal(matchesMR(mr(1), filters, me), false);

@@ -114,6 +114,56 @@ func TestOptionalFailureAndAbsentPipelineStayUnknown(t *testing.T) {
 	}
 }
 
+func TestApprovalFallbackOnlyFor404WithKnownCount(t *testing.T) {
+	notFound := &apiError{status: 404, err: errors.New("not found")}
+	for _, test := range []struct {
+		name         string
+		approvals    string
+		approvalsErr error
+		rules        string
+		rulesErr     error
+		want         string
+	}{
+		{name: "404 without approvals", approvals: `{"approved_by":[]}`, rulesErr: notFound, want: "unapproved"},
+		{name: "404 with approval", approvals: `{"approved_by":[{"user":{"id":9}}]}`, rulesErr: notFound, want: "received"},
+		{name: "404 with missing count", approvals: `{}`, rulesErr: notFound, want: "unknown"},
+		{name: "404 with null count", approvals: `{"approved_by":null}`, rulesErr: notFound, want: "unknown"},
+		{name: "404 with approvals failure", approvalsErr: errors.New("unavailable"), rulesErr: notFound, want: "unknown"},
+		{name: "404 with malformed approvals", approvals: `{`, rulesErr: notFound, want: "unknown"},
+		{name: "forbidden", approvals: `{"approved_by":[]}`, rulesErr: &apiError{status: 403, err: errors.New("forbidden")}, want: "unknown"},
+		{name: "unauthorized", approvals: `{"approved_by":[]}`, rulesErr: &apiError{status: 401, err: errors.New("unauthorized")}, want: "unknown"},
+		{name: "server error", approvals: `{"approved_by":[]}`, rulesErr: &apiError{status: 500, err: errors.New("server error")}, want: "unknown"},
+		{name: "timeout", approvals: `{"approved_by":[]}`, rulesErr: context.DeadlineExceeded, want: "unknown"},
+		{name: "missing rules", approvals: `{"approved_by":[]}`, rules: `{}`, want: "unknown"},
+		{name: "malformed rules", approvals: `{"approved_by":[]}`, rules: `{`, want: "unknown"},
+		{name: "rules not required", approvals: `{"approved_by":[]}`, rules: `{"rules":[]}`, want: "not_required"},
+		{name: "rules waiting despite approval", approvals: `{"approved_by":[{"user":{"id":9}}]}`, rules: `{"rules":[{"approved":false}]}`, want: "waiting"},
+		{name: "rules met", approvals: `{"approved_by":[]}`, rules: `{"rules":[{"approved":true}]}`, want: "met"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := Client{Run: func(_ context.Context, args []string) ([]byte, error) {
+				switch {
+				case strings.Contains(args[1], "?"):
+					return encode([]rawMR{fixture(1)}), nil
+				case strings.HasSuffix(args[1], "/approvals"):
+					return []byte(test.approvals), test.approvalsErr
+				case strings.HasSuffix(args[1], "/approval_state"):
+					return []byte(test.rules), test.rulesErr
+				default:
+					return encode(fixture(1)), nil
+				}
+			}}
+			var result []model.MR
+			if err := c.Load(context.Background(), model.Project{ID: 1}, func(mrs []model.MR, _ []string) { result = mrs }); err != nil {
+				t.Fatal(err)
+			}
+			if len(result) != 1 || result[0].Approval.State != test.want {
+				t.Fatalf("want %s, got %+v", test.want, result)
+			}
+		})
+	}
+}
+
 func TestApprovalCountsDoNotInventRequirements(t *testing.T) {
 	zero, two, one := 0, 2, 1
 	for _, test := range []struct {

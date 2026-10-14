@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,17 @@ import (
 )
 
 type Runner func(context.Context, []string) ([]byte, error)
+
+// Preserve only the HTTP status from glab's diagnostics, never raw stderr.
+type apiError struct {
+	status int
+	err    error
+}
+
+func (e *apiError) Error() string { return e.err.Error() }
+func (e *apiError) Unwrap() error { return e.err }
+
+var httpStatusPattern = regexp.MustCompile(`\(HTTP ([0-9]{3})\)(?:\r?\n|$)`)
 
 type Client struct {
 	Run      Runner
@@ -52,7 +64,12 @@ func ExecRunner(dir string) Runner {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			return nil, fmt.Errorf("glab の実行に失敗しました (%w)。ホスト、権限、glab auth status を確認してください", err)
+			failure := fmt.Errorf("glab の実行に失敗しました (%w)。ホスト、権限、glab auth status を確認してください", err)
+			if match := httpStatusPattern.FindStringSubmatch(stderr.String()); match != nil {
+				status, _ := strconv.Atoi(match[1])
+				return nil, &apiError{status: status, err: failure}
+			}
+			return nil, failure
 		}
 		return stdout.Bytes(), nil
 	}
@@ -310,13 +327,18 @@ func (c *Client) Load(ctx context.Context, p model.Project, publish func([]model
 				} else {
 					mr.Approval = approval(a)
 				}
-				// /approval_state is optional (edition/tier dependent). If unavailable,
-				// retain the observed approval count and unknown requirements.
+				// /approval_state is edition/tier dependent. Only a 404 allows
+				// falling back to a known zero approval count; other errors stay unknown.
 				var rules struct {
 					Rules json.RawMessage `json:"rules"`
 				}
 				if err := c.get(ctx, base+"/approval_state", &rules); err == nil {
 					mr.Approval = applyRules(mr.Approval, rules.Rules)
+				} else {
+					var failure *apiError
+					if errors.As(err, &failure) && failure.status == 404 && mr.Approval.CountKnown && mr.Approval.Count == 0 {
+						mr.Approval.State = "unapproved"
+					}
 				}
 				mu.Lock()
 				mrs[i] = mr
