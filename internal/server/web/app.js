@@ -2,6 +2,14 @@
 
 const $ = (selector) => document.querySelector(selector);
 const token = $('meta[name="mr-graph-session"]').content;
+const initialFilters = () => ({
+  authored: false,
+  assigned: false,
+  showBots: false,
+  approvalWaiting: false,
+  labels: [],
+  query: "",
+});
 const state = {
   snapshot: null,
   selected: null,
@@ -12,14 +20,7 @@ const state = {
   nextRefresh: Date.now() + 60000,
   requesting: false,
   fingerprint: "",
-  filters: {
-    authored: false,
-    assigned: false,
-    showBots: false,
-    approvalWaiting: false,
-    labels: [],
-    query: "",
-  },
+  filters: initialFilters(),
   visible: new Set(),
   matches: new Set(),
   positions: new Map(),
@@ -175,6 +176,8 @@ function signalHTML(ci) {
 const nodeElements = new Map(),
   edgeElements = new Map();
 function renderGraph() {
+  const { authored, assigned, showBots, approvalWaiting, labels, query } = state.filters;
+  $("#reset-filters").disabled = !(authored || assigned || showBots || approvalWaiting || labels.length || query);
   if (!state.snapshot) return;
   const g = state.snapshot.graph;
   const { matches, visible } = graphVisibility(g, state.filters);
@@ -379,7 +382,7 @@ function select(id, focus = true) {
   if (!n?.mr) return;
   // A relation may be hidden by the filters. Reveal the selected MR by clearing
   // conditions, so the panel never selects an invisible node.
-  if (!state.visible.has(id)) resetFilters();
+  if (!state.visible.has(id)) resetFilters(true);
   state.selected = id;
   renderGraph();
   renderInspector(true);
@@ -396,15 +399,8 @@ function clear(returnFocus = false) {
       ?.querySelector(".node-select")
       ?.focus({ preventScroll: true });
 }
-function resetFilters() {
-  state.filters = {
-    authored: false,
-    assigned: false,
-    showBots: true,
-    approvalWaiting: false,
-    labels: [],
-    query: "",
-  };
+function resetFilters(showBots = false) {
+  state.filters = { ...initialFilters(), showBots };
   for (const [id, key] of [
     ["authored", "authored"],
     ["assigned", "assigned"],
@@ -719,6 +715,11 @@ $("#query").addEventListener("input", (e) => {
   state.filters.query = e.target.value;
   applyFilters();
 });
+$("#reset-filters").addEventListener("click", () => {
+  resetFilters();
+  $("#label-filter").open = false;
+  applyFilters();
+});
 $("#theme").addEventListener("click", () => {
   const next =
     document.documentElement.dataset.theme === "mocha" ? "latte" : "mocha";
@@ -856,6 +857,7 @@ const shortcutControls = {
   w: "approval-waiting",
   g: "label-filter-summary",
   b: "show-bots",
+  c: "reset-filters",
   u: "auto",
   r: "refresh",
   t: "theme",

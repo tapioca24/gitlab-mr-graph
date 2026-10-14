@@ -268,6 +268,24 @@ input[type="checkbox"] {
   background: var(--mantle);
   color: var(--subtext);
 }
+#reset-filters {
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--surface0);
+  border-radius: 6px;
+  background: var(--mantle);
+  color: var(--subtext);
+  font-size: 11px;
+  cursor: pointer;
+}
+#reset-filters:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#reset-filters:disabled {
+  color: var(--overlay);
+  cursor: default;
+}
 .query-field:focus-within {
   border-color: var(--accent);
 }
