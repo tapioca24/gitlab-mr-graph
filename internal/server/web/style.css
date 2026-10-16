@@ -389,6 +389,8 @@ input[type="checkbox"] {
   position: relative;
   overflow: hidden;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
   cursor: grab;
   background-color: var(--mantle);
   background-image: radial-gradient(

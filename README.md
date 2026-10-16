@@ -41,7 +41,7 @@ gitlab-mr-graph --repo group/project --hostname gitlab.example.com
 gitlab-mr-graph --repo https://gitlab.example.com/group/project
 ```
 
-MR data refreshes every 60 seconds. Automatic fetching pauses while the tab is hidden.
+MR data refreshes every 5 minutes. Automatic fetching pauses while the tab is hidden.
 
 Awaiting approval includes MRs with unmet approval rules. If the approval rules API returns 404 (for example, on a Free self-hosted instance), it includes MRs with a known approval count of zero instead.
 

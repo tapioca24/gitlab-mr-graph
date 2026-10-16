@@ -2,6 +2,7 @@
 
 const $ = (selector) => document.querySelector(selector);
 const token = $('meta[name="mr-graph-session"]').content;
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const initialFilters = () => ({
   authored: false,
   assigned: false,
@@ -17,7 +18,7 @@ const state = {
   x: 0,
   y: 0,
   fitted: false,
-  nextRefresh: Date.now() + 60000,
+  nextRefresh: Date.now() + AUTO_REFRESH_INTERVAL_MS,
   requesting: false,
   fingerprint: "",
   filters: initialFilters(),
@@ -631,7 +632,7 @@ async function refresh() {
   if (state.requesting || state.snapshot?.loading) return;
   state.requesting = true;
   $("#refresh").disabled = true;
-  state.nextRefresh = Date.now() + 60000;
+  state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_MS;
   try {
     await request("/api/refresh", { method: "POST" });
   } catch (error) {
@@ -747,7 +748,7 @@ $("#zoom-out").addEventListener("click", () =>
   zoom(0.8, undefined, undefined, true),
 );
 $("#auto").addEventListener("change", () => {
-  state.nextRefresh = Date.now() + 60000;
+  state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_MS;
 });
 setInterval(() => {
   if ($("#auto").checked && !document.hidden && Date.now() >= state.nextRefresh)
